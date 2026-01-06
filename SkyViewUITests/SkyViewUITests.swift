@@ -1,10 +1,3 @@
-//
-//  SkyViewUITests.swift
-//  SkyViewUITests
-//
-//  Created by 宮坂信城 on 2026/01/04.
-//
-
 import XCTest
 
 final class SkyViewUITests: XCTestCase {

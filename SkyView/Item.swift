@@ -1,17 +1,15 @@
-//
-//  Item.swift
-//  SkyView
-//
-//  Created by 宮坂信城 on 2026/01/04.
-//
-
 import Foundation
 import SwiftData
 
+/// 永続化用のサンプルモデル。
 @Model
 final class Item {
+    /// 作成時刻
     var timestamp: Date
-    
+
+    /// 初期化。
+    /// - Parameters:
+    ///   - timestamp: アイテムのタイムスタンプ
     init(timestamp: Date) {
         self.timestamp = timestamp
     }

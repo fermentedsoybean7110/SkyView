@@ -1,0 +1,40 @@
+name: SwiftLint
+
+on:
+  pull_request:
+    paths:
+      - 'SkyView/**'
+      - '.swiftlint.yml'
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        run: |
+          echo "Updating Homebrew and installing dependencies"
+          brew update || true
+
+      - name: Install SwiftLint
+        run: |
+          if ! command -v swiftlint >/dev/null 2>&1; then
+            brew install swiftlint
+          else
+            echo "swiftlint already installed"
+          fi
+
+      - name: Run SwiftLint
+        working-directory: SkyView
+        run: |
+          if command -v swiftlint >/dev/null 2>&1; then
+            echo "Running swiftlint (strict mode)"
+            swiftlint lint --config ../.swiftlint.yml --strict
+          else
+            echo "error: swiftlint not installed" >&2
+            exit 1
+          fi

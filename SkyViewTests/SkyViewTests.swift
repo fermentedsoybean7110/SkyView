@@ -1,16 +1,16 @@
-//
-//  SkyViewTests.swift
-//  SkyViewTests
-//
-//  Created by 宮坂信城 on 2026/01/04.
-//
+import XCTest
+@testable import SkyView
 
-import Testing
-
-struct SkyViewTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+final class SkyViewTests: XCTestCase {
+    override func setUpWithError() throws {
+        // Put setup code here. This method is called before the invocation of each test method in the class.
     }
 
+    override func tearDownWithError() throws {
+        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    }
+
+    func testExample() throws {
+        // This is an example of a functional test case.
+    }
 }

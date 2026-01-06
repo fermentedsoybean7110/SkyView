@@ -2,14 +2,17 @@
 //  SkyViewApp.swift
 //  SkyView
 //
-//  Created by 宮坂信城 on 2026/01/04.
-//
 
 import SwiftUI
 import SwiftData
 
+/// アプリのエントリポイント。
+///
+/// アプリ全体の共有 `ModelContainer` を初期化し、ルートビューに対して
+/// 指定された背景色を適用して `ContentView` を表示します。
 @main
 struct SkyViewApp: App {
+    /// 共有の ModelContainer を構築します。
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -25,7 +28,12 @@ struct SkyViewApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // ルートで背景色を適用して、View階層による背景の上書きを防ぎます。
+            ZStack {
+                Color(red: 210.0/255.0, green: 211.0/255.0, blue: 214.0/255.0)
+                    .ignoresSafeArea()
+                ContentView()
+            }
         }
         .modelContainer(sharedModelContainer)
     }
