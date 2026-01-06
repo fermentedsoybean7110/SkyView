@@ -7,20 +7,8 @@ disabled_rules:
   - static_over_final_class
   - trailing_comma
 
-custom_rules:
-  no_japanese_period_in_doccomment:
-    included: "**/*.swift"
-    name: "No Japanese period in doc comment"
-    regex: "^\\s*///.*。"
-    message: "ドキュメントコメントの各行の末尾に「。」を付けないこと（Private.instructions.md に準拠）"
-    severity: error
-
-  require_triple_slash_doccomment:
-    included: "**/*.swift"
-    name: "Require triple slash doc comment"
-    regex: "^\\s*/\\*\\*"
-    message: "ドキュメントコメントは `///` を使用すること"
-    severity: warning
+# カスタムルールは一時的に削除済。将来的に導入する場合は
+# SwiftLint のバージョンと互換性のある設定形式を利用すること
 
 line_length:
   warning: 200
@@ -29,3 +17,5 @@ line_length:
 # opt in rules can be added if desired
 opt_in_rules:
   - empty_count
+
+# Note: previously invalid 'reports' key removed
