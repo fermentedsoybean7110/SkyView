@@ -63,6 +63,69 @@ CI (GitHub Actions) での実行例
 PR や push の際に SwiftLint を実行するワークフローを作成すると品質ゲートになる
 - 実装例: `/.github/workflows/lint.yml` を作り、macOS ランナー上で `brew install swiftlint` して `swiftlint lint --config .swiftlint.yml` を実行する
 
+公開後のクローン手順（外部開発者向け）
+---
+以下の手順でクローン後のセットアップを行えば、ローカルでアプリをビルド・実行できる
+
+1) リポジトリのクローン
+```bash
+git clone https://github.com/fermentedsoybean7110/SkyView.git
+cd SkyView
+```
+
+2) Secrets の設定（必須）
+- 本リポジトリでは API キーを `SkyView/Secrets.xcconfig` で管理する仕様である。本ファイルはリポジトリに含めていないため、クローン後に自分の環境で作成する必要がある
+- テンプレートを用意している場合はそれをコピーして編集する（もし `Secrets.xcconfig.example` がある場合）
+
+例: `Secrets.xcconfig` を作成する
+```bash
+# プロジェクトルートで
+cat > SkyView/Secrets.xcconfig <<EOL
+OPENWEATHER_API_KEY = YOUR_OPENWEATHER_API_KEY_HERE
+EOL
+```
+
+- `YOUR_OPENWEATHER_API_KEY_HERE` は OpenWeather のダッシュボードで発行した API キーに置き換えること
+- このファイルは必ず `.gitignore` に含まれているためコミットされない
+
+3) SwiftLint のインストール
+- Homebrew がある場合（推奨）
+```bash
+brew install swiftlint
+```
+- 付属のインストールスクリプトを使う場合
+```bash
+bash Tools/install_swiftlint.sh
+```
+
+4) pre-commit フックの設置（任意だが推奨）
+- リポジトリにフックのテンプレートが含まれている場合はそれをコピーして有効化する
+```bash
+# テンプレが .githooks/pre-commit にある場合（例）
+cp .githooks/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+- もしテンプレートがない場合は、プロジェクトの `README.md` の "pre-commit フック" 節を参照して手動でセットアップすること
+
+5) Xcode での起動と実行
+- `SkyView.xcodeproj` を Xcode で開き、ターゲット `SkyView` を選択してシミュレータを指定し実行する
+- またはコマンドラインでビルド/テストを実行する
+```bash
+# ビルド
+xcodebuild -scheme SkyView -destination 'platform=iOS Simulator,name=iPhone 17' build
+# テスト
+xcodebuild -scheme SkyView -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+6) API キーの取得方法（OpenWeather）
+- OpenWeather のサイトに登録して API キーを取得する
+- 取得したキーは `SkyView/Secrets.xcconfig` に設定し、決してリポジトリにコミットしないこと
+
+セキュリティ上の重要事項
+---
+- 本リポジトリは公開前に履歴から `Secrets.xcconfig` を削除済であるが、万一キーが流出した可能性を考慮し、公開前後に API キーを必ずローテーション（無効化 → 新規発行）すること
+- CI（GitHub Actions 等）で API キーを使う場合は GitHub Secrets を利用し、workflow 内で動的に `Secrets.xcconfig` を生成する運用を推奨する
+
 サポート
 ---
 不明点や誤検知の報告は Issue を立てること
