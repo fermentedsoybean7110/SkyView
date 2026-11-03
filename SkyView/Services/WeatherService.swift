@@ -54,6 +54,11 @@ final class WeatherService: WeatherServiceProtocol {
     private let decoder: JSONDecoder
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.sample.SkyView", category: "WeatherService")
 
+    private enum Operation: String {
+        case currentWeather = "current_weather"
+        case forecast = "forecast"
+    }
+
     /// 初期化
     /// - Parameters:
     ///   - session: `URLSession` インスタンス（テスト時はモックの session を渡す）
@@ -62,7 +67,7 @@ final class WeatherService: WeatherServiceProtocol {
         self.session = session
         self.apiKey = apiKey
         self.decoder = JSONDecoder()
-        logger.debug("WeatherService initialized (apiKey present: \(self.apiKey.isEmpty ? "false" : "true", privacy: .public))")
+        logger.debug("WeatherService initialized")
     }
 
     /// 現在天気を取得する
@@ -83,22 +88,22 @@ final class WeatherService: WeatherServiceProtocol {
             URLQueryItem(name: "lang", value: "ja")
         ]
         guard let url = components.url else {
-            logger.error("Failed to build URL from components: \(String(describing: components), privacy: .public)")
+            logger.error("Failed to build request URL (operation=\(Operation.currentWeather.rawValue, privacy: .public))")
             throw WeatherError.invalidURL
         }
 
         var request = URLRequest(url: url)
         request.timeoutInterval = 30
 
-        logger.debug("fetchCurrentWeather request: \(url.absoluteString, privacy: .public)")
+        logger.debug("Sending weather request (operation=\(Operation.currentWeather.rawValue, privacy: .public))")
 
         do {
             let (data, response) = try await session.data(for: request)
-            logger.debug("received response: \(String(describing: response), privacy: .public), dataLength=\(data.count)")
             guard let http = response as? HTTPURLResponse else {
                 logger.error("Response is not HTTPURLResponse")
                 throw WeatherError.noData
             }
+            logger.debug("Received weather response (operation=\(Operation.currentWeather.rawValue, privacy: .public), status=\(http.statusCode), dataLength=\(data.count))")
             guard (200...299).contains(http.statusCode) else {
                 logger.error("Invalid HTTP status code: \(http.statusCode)")
                 throw WeatherError.invalidResponse(statusCode: http.statusCode)
@@ -108,16 +113,16 @@ final class WeatherService: WeatherServiceProtocol {
                 logger.debug("decoded CurrentWeatherResponse: city=\(model.name ?? "-", privacy: .public)")
                 return model
             } catch {
-                logger.error("decoding error: \(error.localizedDescription, privacy: .public)")
+                logger.error("Decoding error (operation=\(Operation.currentWeather.rawValue, privacy: .public), type=\(String(describing: type(of: error)), privacy: .public))")
                 throw WeatherError.decoding(error)
             }
         } catch {
             // 既に WeatherError が投げられている場合はそのまま再スローする
             if let we = error as? WeatherError {
-                logger.error("propagating WeatherError: \(we.errorDescription ?? "", privacy: .public)")
+                logWeatherError(we, operation: .currentWeather)
                 throw we
             }
-            logger.error("network error: \(error.localizedDescription, privacy: .public)")
+            logNetworkError(error, operation: .currentWeather)
             throw WeatherError.network(error)
         }
     }
@@ -140,22 +145,22 @@ final class WeatherService: WeatherServiceProtocol {
             URLQueryItem(name: "lang", value: "ja")
         ]
         guard let url = components.url else {
-            logger.error("Failed to build forecast URL from components: \(String(describing: components), privacy: .public)")
+            logger.error("Failed to build request URL (operation=\(Operation.forecast.rawValue, privacy: .public))")
             throw WeatherError.invalidURL
         }
 
         var request = URLRequest(url: url)
         request.timeoutInterval = 30
 
-        logger.debug("fetchForecast request: \(url.absoluteString, privacy: .public)")
+        logger.debug("Sending weather request (operation=\(Operation.forecast.rawValue, privacy: .public))")
 
         do {
             let (data, response) = try await session.data(for: request)
-            logger.debug("received forecast response: \(String(describing: response), privacy: .public), dataLength=\(data.count)")
             guard let http = response as? HTTPURLResponse else {
                 logger.error("Forecast response is not HTTPURLResponse")
                 throw WeatherError.noData
             }
+            logger.debug("Received weather response (operation=\(Operation.forecast.rawValue, privacy: .public), status=\(http.statusCode), dataLength=\(data.count))")
             guard (200...299).contains(http.statusCode) else {
                 logger.error("Invalid HTTP status code for forecast: \(http.statusCode)")
                 throw WeatherError.invalidResponse(statusCode: http.statusCode)
@@ -165,16 +170,39 @@ final class WeatherService: WeatherServiceProtocol {
                 logger.debug("decoded ForecastResponse: city=\(model.city.name ?? "-", privacy: .public), entries=\(model.list.count)")
                 return model
             } catch {
-                logger.error("forecast decoding error: \(error.localizedDescription, privacy: .public)")
+                logger.error("Decoding error (operation=\(Operation.forecast.rawValue, privacy: .public), type=\(String(describing: type(of: error)), privacy: .public))")
                 throw WeatherError.decoding(error)
             }
         } catch {
             if let we = error as? WeatherError {
-                logger.error("propagating WeatherError (forecast): \(we.errorDescription ?? "", privacy: .public)")
+                logWeatherError(we, operation: .forecast)
                 throw we
             }
-            logger.error("forecast network error: \(error.localizedDescription, privacy: .public)")
+            logNetworkError(error, operation: .forecast)
             throw WeatherError.network(error)
         }
+    }
+
+    private func logWeatherError(_ error: WeatherError, operation: Operation) {
+        switch error {
+        case .invalidURL:
+            logger.error("WeatherError.invalidURL (operation=\(operation.rawValue, privacy: .public))")
+        case .network(let underlying):
+            logNetworkError(underlying, operation: operation)
+        case .invalidResponse(let statusCode):
+            logger.error("WeatherError.invalidResponse (operation=\(operation.rawValue, privacy: .public), status=\(statusCode))")
+        case .decoding(let underlying):
+            logger.error("WeatherError.decoding (operation=\(operation.rawValue, privacy: .public), type=\(String(describing: type(of: underlying)), privacy: .public))")
+        case .noData:
+            logger.error("WeatherError.noData (operation=\(operation.rawValue, privacy: .public))")
+        }
+    }
+
+    private func logNetworkError(_ error: Error, operation: Operation) {
+        if let urlError = error as? URLError {
+            logger.error("Network error (operation=\(operation.rawValue, privacy: .public), code=\(urlError.code.rawValue))")
+            return
+        }
+        logger.error("Network error (operation=\(operation.rawValue, privacy: .public), type=\(String(describing: type(of: error)), privacy: .public))")
     }
 }
